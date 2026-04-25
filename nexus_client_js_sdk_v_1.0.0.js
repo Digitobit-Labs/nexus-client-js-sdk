@@ -2,8 +2,8 @@
  * Nexus JS SDK v1.0.0
  * Context-Aware Abuse Protection Client
  *
- * Author: Neeraj Mourya
- * Organization: Digitobit
+ * Author: Digitobit
+ * Developed By: Neeraj Mourya
  * Product: Nexus
  *
  * Copyright (c) 2026 Digitobit
@@ -29,7 +29,7 @@
  * ------------------------------------------------------------
  * Version: 1.0.0
  * Release Date: 2026-04-25
- * Maintained by: Digitobit
+ * Developed by: Neeraj Mourya
  *
  * Website: https://www.digitobit.com
  * GitHub: https://github.com/Digitobit-Labs/nexus-client-js-sdk
