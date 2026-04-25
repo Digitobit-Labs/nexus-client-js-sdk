@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Nexus SDK Multi-Form Test</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    margin:40px;
+}
+
+form{
+    width:420px;
+    padding:20px;
+    border:1px solid #ccc;
+    margin-bottom:30px;
+}
+
+input,textarea,select{
+    width:100%;
+    padding:8px;
+    margin:8px 0;
+}
+
+.nexus-challenge{
+    margin:10px 0;
+}
+
+h3{
+    margin-top:40px;
+}
+
+</style>
+
+</head>
+<body>
+
+<h2>Nexus SDK Multi-Form Test</h2>
+
+<p>Use console to observe behavior across multiple forms.</p>
+
+<hr>
+
+<!-- FORM 1 -->
+<h3>Contact Form</h3>
+<form data-nexus-action="contact.submit">
+
+<input name="name" placeholder="Name" required>
+<input name="email" type="email" placeholder="Email" required>
+<textarea name="message" placeholder="Message"></textarea>
+
+<div class="nexus-challenge"></div>
+
+<button type="submit">Send</button>
+
+</form>
+
+<hr>
+
+<!-- FORM 2 -->
+<h3>Login Form</h3>
+<form data-nexus-action="auth.login">
+
+<input name="username" placeholder="Username" required>
+<input name="password" type="password" placeholder="Password" required>
+
+<div class="nexus-challenge"></div>
+
+<button type="submit">Login</button>
+
+</form>
+
+<hr>
+
+<!-- FORM 3 -->
+<h3>Newsletter Signup (No Predefined Challenge Container)</h3>
+<form data-nexus-action="newsletter.subscribe">
+
+<input name="email" type="email" placeholder="Email" required>
+
+<button type="submit">Subscribe</button>
+
+</form>
+
+<hr>
+
+<!-- FORM 4 -->
+<h3>Feedback Form</h3>
+<form data-nexus-action="feedback.submit">
+
+<input name="name" placeholder="Name">
+<select name="rating">
+    <option value="">Select rating</option>
+    <option>1</option>
+    <option>2</option>
+    <option>3</option>
+    <option>4</option>
+    <option>5</option>
+</select>
+
+<textarea name="feedback" placeholder="Your feedback"></textarea>
+
+<div class="nexus-challenge"></div>
+
+<button type="submit">Submit Feedback</button>
+
+</form>
+
+<hr>
+
+<!-- FORM 5 -->
+<h3>Quick Submit Form (Spam Simulation)</h3>
+<form data-nexus-action="quick.submit">
+
+<input name="data" placeholder="Type something fast">
+
+<div class="nexus-challenge"></div>
+
+<button type="submit">Quick Submit</button>
+
+</form>
+
+<hr>
+
+<!-- MANUAL TEST -->
+<h3>Manual Button Test</h3>
+
+<button id="manual">Manual Guard</button>
+
+<div class="nexus-challenge"></div>
+
+<script
+    src="nexus_sdk_v_1.js"
+    data-sitekey="pk_digiauth"
+    data-auto="form">
+</script>
+
+<script>
+
+document.getElementById("manual").onclick = async ()=>{
+
+    const res = await Nexus.execute("manual.button");
+
+    console.log("Manual result",res);
+
+};
+
+</script>
+
+</body>
+</html>
