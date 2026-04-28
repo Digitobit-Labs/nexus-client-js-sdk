@@ -1,143 +1,187 @@
 # Nexus JS SDK
 
-Nexus JS SDK is a lightweight, client-side library for context-aware abuse protection. It collects behavioral, timing, and environment signals from the browser and communicates with the Nexus Guard API to detect bots and enforce adaptive challenges.
-
----
+Nexus JS SDK is a lightweight browser client for context-aware abuse protection. It collects interaction and environment signals, sends them to the Nexus Guard API, and handles allow, challenge, or deny responses.
 
 ## Features
 
-* Behavioral signal collection (mouse, keyboard, interaction)
-* Timing and latency analysis
-* Environment fingerprinting
-* Adaptive challenge system (delay, image, arithmetic, etc.)
-* Seamless form integration
-* Minimal impact on user experience
-
----
+* Programmatic initialization with safe config merging
+* Backward-compatible script tag mode
+* Manual lifecycle control with `window.NEXUS_DISABLE_AUTO_INIT`
+* Automatic form protection
+* Hidden field action support via `name="nexus_action"`
+* Manual execution for SPA and API-first integrations
 
 ## Installation
 
-Include the SDK in your HTML:
+Include the SDK in your page:
+
+```html
+<script src="nexus_client_js_sdk_v_1.0.0.js"></script>
+```
+
+## Official Usage Patterns
+
+### A. Script Tag Mode (No-code)
 
 ```html
 <script
-  src="nexus_sdk_v_1.js"
-  data-sitekey="YOUR_SITE_KEY"
+  src="nexus_client_js_sdk_v_1.0.0.js"
+  data-sitekey="pk_xxx"
   data-auto="form">
 </script>
 ```
 
----
-
-## Basic Usage
-
-### Form Protection
-
-Add `data-nexus-action` to your form:
+Add `data-nexus-action` to any protected form:
 
 ```html
 <form data-nexus-action="contact.submit">
   <input name="name" required>
-  <input name="email" required>
   <button type="submit">Send</button>
 </form>
 ```
 
-The SDK will automatically:
+### B. Developer Mode (Recommended)
 
-1. Intercept form submission
-2. Collect signals
-3. Request token from backend
-4. Render challenge if required
-5. Submit form with token
+```html
+<script src="nexus_client_js_sdk_v_1.0.0.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  Nexus.init({
+    siteKey: "pk_xxx",
+    endpoint: "https://nexus.digitobit.com/v1/guard/token",
+    auto: true,
+    debug: false
+  });
+});
+</script>
+```
 
----
+This mode keeps the SDK explicit while still enabling automatic form binding.
 
-### Manual Execution
+### C. Full Manual Mode (Advanced)
 
-You can manually trigger protection:
+```html
+<script>
+window.NEXUS_DISABLE_AUTO_INIT = true;
+</script>
+<script src="nexus_client_js_sdk_v_1.0.0.js"></script>
+<script>
+Nexus.config.siteKey = "pk_xxx";
+
+const res = await Nexus.execute("login.submit");
+</script>
+```
+
+This mode makes no initialization-time DOM assumptions and is useful for SPAs, framework apps, and API-first flows.
+
+## Initialization
+
+`Nexus.init()` accepts an optional config object:
+
+```javascript
+Nexus.init({
+  siteKey: "pk_xxx",
+  auto: true,
+  guard: "page.view",
+  mode: "auto",
+  debug: true
+});
+```
+
+Supported config keys:
+
+* `siteKey`
+* `endpoint`
+* `auto`
+* `guard`
+* `mode` with `auto` or `manual`
+* `debug`
+
+Behavior notes:
+
+* Config is merged key-by-key instead of replacing the whole config object.
+* Script tag `data-*` values still work as a fallback.
+* `mode: "manual"` disables automatic form binding and page guard setup.
+* Re-running `Nexus.init()` after successful initialization is ignored with a warning.
+
+## Manual Execution
+
+You can execute a request without form binding:
 
 ```javascript
 const res = await Nexus.execute("custom.action");
 console.log(res);
 ```
 
----
+`siteKey` must be present before execution. If it is missing, `Nexus.execute()` throws an error.
+
+You can also override the action dynamically:
+
+```javascript
+const res = await Nexus.execute(null, {
+  action: "dynamic_action_name"
+});
+```
+
+## Form Action Resolution
+
+In automatic form mode, action is resolved in this order:
+
+1. `data-nexus-action`
+2. hidden or visible field with `name="nexus_action"`
+3. error if neither is present
+
+Example:
+
+```html
+<form>
+  <input type="hidden" name="nexus_action" value="signup.submit">
+  <input name="email" type="email" required>
+  <button type="submit">Join</button>
+</form>
+```
 
 ## Challenge Types
 
-The SDK supports multiple challenge types:
+The SDK supports:
 
-* delay (human interaction timing)
-* image (text recognition)
-* sequence_memory
-* arithmetic
-* emoji_count
-* reverse_text
+* `delay`
+* `image`
+* `sequence_memory`
+* `arithmetic`
+* `emoji_count`
+* `reverse_text`
 
-Challenges are rendered automatically inside the form.
+Challenges are rendered automatically for form and guard flows.
 
----
+## Backend Contract
 
-## Configuration
+The client remains an untrusted signal generator:
 
-| Attribute    | Description                    |
-| ------------ | ------------------------------ |
-| data-sitekey | Your Nexus public key          |
-| data-auto    | "form" to auto-protect forms   |
-| data-guard   | Optional page-level protection |
+* No secrets are exposed in the SDK
+* `action` stays explicit for the `/verify` contract
+* Payload integrity and attestation flow remain unchanged
 
----
+Expected backend responses:
 
-## How It Works
-
-1. SDK collects client signals
-2. Sends request to `/v1/guard/token`
-3. Server evaluates risk score
-4. Returns:
-
-   * token (allowed)
-   * challenge (verification required)
-   * denied (blocked)
-
----
-
-## Backend Requirements
-
-Your backend must:
-
-* Accept JSON POST requests
-* Return structured responses (ok / challenge / denied)
-* Support CORS if used cross-origin
-
----
+* `ok`
+* `challenge`
+* `denied`
 
 ## Development Notes
 
-* Ensure SDK is served over HTTP/HTTPS (not file://)
-* Enable CORS on backend
-* Use console logs for debugging
-
----
+* Serve over HTTP or HTTPS, not `file://`
+* Enable CORS on the backend when needed
+* Use `debug: true` during integration if you want SDK logs
 
 ## License
 
 MIT License © Digitobit
 
----
-
 ## Author
 
 Digitobit
 
----
-
 ## Developed By
 
 Neeraj Mourya
-
----
-
-## Repository
-
-Add your GitHub repository link here.

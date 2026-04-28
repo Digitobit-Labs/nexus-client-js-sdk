@@ -111,8 +111,10 @@ h3{
 <hr>
 
 <!-- FORM 5 -->
-<h3>Quick Submit Form (Spam Simulation)</h3>
-<form data-nexus-action="quick.submit">
+<h3>Quick Submit Form (Hidden Action Field)</h3>
+<form>
+
+<input type="hidden" name="nexus_action" value="quick.submit">
 
 <input name="data" placeholder="Type something fast">
 
@@ -132,7 +134,7 @@ h3{
 <div class="nexus-challenge"></div>
 
 <script
-    src="nexus_sdk_v_1.js"
+    src="nexus_client_js_sdk_v_1.0.0.js"
     data-sitekey="pk_digiauth"
     data-auto="form">
 </script>
@@ -141,7 +143,9 @@ h3{
 
 document.getElementById("manual").onclick = async ()=>{
 
-    const res = await Nexus.execute("manual.button");
+    const res = await Nexus.execute(null,{
+        action:"manual.button"
+    });
 
     console.log("Manual result",res);
 

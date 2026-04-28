@@ -583,27 +583,70 @@ const Nexus = {
 
     config:{
         siteKey:null,
-        endpoint:'http://localhost/nexus/public/v1/guard/token',
+        endpoint:'https://nexus.digitobit.com/v1/guard/token',
         auto:false,
-        guard:null
+        guard:null,
+        mode:'auto',
+        debug:false
     },
 
     collector:new SignalCollector(),
+    initialized:false,
+    formsBound:false,
+
+    debug(){
+        if(!this.config.debug)
+            return;
+
+        console.log.apply(console,arguments);
+    },
 
 
-    init(){
-        const script = document.querySelector('script[src*="nexus_sdk"]');
+    getScriptConfig(){
+        const script = document.querySelector('script[src*="nexus_client_js_sdk"]');
 
-        if(!script){
-            console.error("Nexus SDK script tag not found");
+        if(!script)
+            return null;
+
+        return {
+            siteKey: script.dataset.sitekey || null,
+            auto: script.dataset.auto === "form",
+            guard: script.dataset.guard || null
+        };
+    },
+
+
+    mergeConfig(config){
+        if(!config || typeof config !== "object")
+            return;
+
+        const allowedKeys = ['siteKey','endpoint','auto','guard','mode','debug'];
+
+        for(const key of allowedKeys){
+            if(config[key] !== undefined)
+                this.config[key] = config[key];
+        }
+    },
+
+
+    init(customConfig=null){
+        if(this.initialized){
+            console.warn("Nexus already initialized");
             return;
         }
 
-        this.config.siteKey = script.dataset.sitekey;
-        this.config.auto = script.dataset.auto === "form";
-        this.config.guard = script.dataset.guard || null;
-        
-        console.log(this.config.siteKey);
+        const scriptConfig = this.getScriptConfig();
+
+        if(scriptConfig)
+            this.mergeConfig(scriptConfig);
+
+        if(customConfig && typeof customConfig === "object")
+            this.mergeConfig(customConfig);
+
+        if(this.config.mode === "manual"){
+            this.config.auto = false;
+            this.config.guard = null;
+        }
 
         if(!this.config.siteKey){
             console.error("Nexus sitekey missing");
@@ -615,13 +658,24 @@ const Nexus = {
 
         if(this.config.guard)
             this.guardPage();
+
+        this.initialized = true;
     },
 
 
     async execute(action,extra={}){
+        action = action || extra.action;
+
+        if(!action)
+            throw new Error("Nexus action is required");
+
+        if(!this.config.siteKey)
+            throw new Error("Nexus not initialized: siteKey missing");
 
         const payload = await this.collector.payload(action,this.config.siteKey);
-        console.log(payload);
+
+        this.debug("Nexus execute payload",payload);
+
         Object.assign(payload,extra);
 
         return Utils.post(this.config.endpoint,payload);
@@ -633,18 +687,42 @@ const Nexus = {
 ============================================================ */
 
     bindForms(){
+        if(this.formsBound){
+            this.debug("Nexus form binding skipped: already bound");
+            return;
+        }
+
+        this.formsBound = true;
 
         document.addEventListener('submit', async (e)=>{
 
             const form = e.target;
 
-            if(!form.matches('[data-nexus-action]'))
+            if(!form.matches('form'))
+                return;
+
+            if(
+                !form.matches('[data-nexus-action]') &&
+                !form.querySelector('[name="nexus_action"]')
+            )
                 return;
 
             e.preventDefault();
             e.stopPropagation();
 
-            const action = form.dataset.nexusAction;
+            let action = form.dataset.nexusAction;
+
+            if(!action){
+                const actionInput = form.querySelector('[name="nexus_action"]');
+
+                if(actionInput)
+                    action = actionInput.value;
+            }
+
+            if(!action){
+                console.error("Nexus action missing on form");
+                return;
+            }
 
             const container = this.ensurePlaceholder(form);
 
@@ -741,8 +819,8 @@ const Nexus = {
     async process(action,form=null,container=null,extra={}){
 
         const res = await this.execute(action,extra);
-        
-        console.log(res);
+
+        this.debug("Nexus process response",res);
 
         if(res.status === "ok"){
 
@@ -760,7 +838,8 @@ const Nexus = {
             if(!container && form)
                 container = form.querySelector('.nexus-challenge');
 
-            form.dataset.nexusChallengeId = res.challenge_id;
+            if(form)
+                form.dataset.nexusChallengeId = res.challenge_id;
 
             Challenge.render(container,res,(answer)=>{
 
@@ -810,11 +889,13 @@ window.Nexus = Nexus;
    Auto Init
 ============================================================ */
 
-document.addEventListener("DOMContentLoaded",()=>{
+if(!window.NEXUS_DISABLE_AUTO_INIT){
+    document.addEventListener("DOMContentLoaded",()=>{
 
-    Nexus.init();
+        Nexus.init();
 
-});
+    });
+}
 
 
 })(window,document);
